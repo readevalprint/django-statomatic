@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+
+
+{% block header %}
+<h2>
+{% block title %}
+PYPY sandbox for safe execution of arbitrary python code
+{% endblock title %}
+<span>
+by <a href="/">ReadEvalPrint</a>
+</span>
+</h2>
+{% endblock header %}
+
+
+{% block content %}
+<acticle class="md">
+So I wanted to run some untrusted code. Javascript looked good because it could
+run in the browser (a natural sandbox). But I needed it to run server side too. 
+
+Pypy popped up on a few sites but it was a bit unclear on the use case for it at
+first. But [this helped](http://pypy.org/features.html#sandboxing). Plus, I like
+python :)
+
+So here is how to install it on ubuntu. A lot of help came from [this dude](http://www.stephendiehl.com/?p=295) 
+
+I was on his site and [here](http://pypy.org/download.html#translate) every day for a
+week.
+
+[UPDATE April 19: Read [Part 2](http://readevalprint.github.com/blog/python-sandbox-with-pypy-part2.html)
+for sane output in a normal python wrapper]
+<pre class="bash"><code>&#36; sudo apt-get install \                                                                                                                                            
+gcc make python-dev libffi-dev pkg-config \
+libz-dev libbz2-dev libncurses-dev libexpat1-dev \
+libssl-dev libgc-dev python-sphinx python-greenlet
+</code></pre>
+
+
+### Get the source and start the translation process
+
+**What is "translating"?**
+
+It's the process of compiling code written in
+[RPython](http://code.google.com/p/rpython/) (a statically typed subset of
+Python) to the target platform which is by default C.
+
+**Why do we need to do that?**
+
+This goes back to [what Pypy is](http://codespeak.net/pypy/dist/pypy/doc/getting-started.html#what-is-pypy).
+To quote: PyPy is an implementation of the Python programming language written
+in Python itself. So combine python written in rpython and a compiler for rpython we
+get the ability to compile python code to native C speeds. :)
+
+There are several options you get when doing the translation process, in this
+case we need [--sandbox](http://codespeak.net/pypy/dist/pypy/doc/sandbox.html).
+This means that all calls to external libraries or os
+calls are passed through an external process that enforces the sandbox. Also the
+C code is not segfaultable. The only thing that is availble outside of pure
+python is a virtual tmp folder of your specification. And that /tmp folder is readonly to
+the program. It's like Inception.*
+
+
+ \* &lt;tangent&gt; I want to run "eval/exec" in the sandbox and that would **really**
+be like Inception.&lt;/tangent&gt;
+
+
+<pre class="bash"><code>&#36; wget http://pypy.org/download/pypy-1.4.1-src.tar.bz2
+&#36; tar -jxvf  ./pypy-1.4.1-src.tar.bz2
+&#36; cd ./pypy-1.4.1-src/pypy/translator/goal
+&#36; python translate.py --sandbox
+</code></pre>
+
+Grab a bite to eat or a cup of tea and enjoy the mandelbrot fractals.
+
+Read [what translation is doing](http://codespeak.net/pypy/dist/pypy/doc/translation.html#overview) while
+you wait.
+
+.
+
+.
+
+.
+
+.
+
+Now while you are still in ~/pypy-1.4.1-src/pypy/translator/goal
+
+<pre><code>&#36; sudo ln -s &grave;pwd&grave;../sandbox/pypy_interact.py /usr/local/bin/pypy_interact.py </code></pre> 
+
+Go home!
+
+<pre><code>&#36; cd 
+</code></pre>
+
+Make a symlink of the source to /opt
+
+<pre><code>&#36; sudo ln -s &grave;pwd&grave;/pypy-1.4.1-src/ /opt/pypy-sandbox </code></pre>
+
+Now let's test it...
+
+Should see prompt and don't go further if you don't
+
+<pre><code>&#36; pypy_interact.py /opt/pypy-sandbox/pypy/translator/goal/pypy-c
+</code></pre>
+
+Now let's test the sandbox! Make a dummy file and put it in the virutal tmp folder
+
+This ./virtualtmp **and it's contents** will become /tmp to the sandboxed
+interperter.
+
+<pre><code>&#36; mkdir ~/virtualtmp
+&#36; echo Good day Sire! &gt; ~/virtualtmp/greetings.txt
+</code></pre>
+
+Specify the ~/virtualtmp for /tmp in the sandbox
+
+Note: the --tmp option is always relative to the prompt regardless of absolute
+paths put there. So "/some/path/" is not from root and "~/a/path" is not from
+home. It's all relative to the prompt.
+
+<pre><code>&#36; pypy_interact.py --tmp=virtualtmp /opt/pypy-sandbox/pypy/translator/goal/pypy-c </code></pre>
+
+Note: you'll see logging text as well, output will be in there somewhere ;)
+
+<pre><code>&gt;&gt;&gt;&gt; f = open('/tmp/greetings.txt')
+&gt;&gt;&gt;&gt; f.read()
+'Good day Sire!\\n'
+</code></pre>
+
+Let's try opening it to write
+But NO! you cannot!
+
+<pre><code>&gt;&gt;&gt;&gt; f = open('/tmp/greetings.txt', 'r+')
+Traceback (most recent call last):
+  File "<console>", line 1, in <module>
+IOError: [Errno 1] Operation not permitted: '/tmp/greetings.txt'
+</code></pre>
+
+[crtl+c to exit]
+They suggest installing ledit to have a saner prompt
+
+<pre class="bash"><code>&#36; sudo apt-get install ledit
+&#36; ledit python -u /usr/local/bin/pypy_interact.py --tmp=virtualtmp /opt/pypy-sandbox/pypy/translator/goal/pypy-cp
+</code></pre>
+
+Continue to [Part 2](/blog/python-sandbox-with-pypy-part2.html) for a wrapper in normal python that gives helpful output
+and error managment.
+
+Thanks to JuanCarlos for proofreading skillz and Norm for feedback as positive as
+possible.
+</acticle>
+{% endblock content %}
