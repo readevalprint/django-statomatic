@@ -1,25 +1,18 @@
-{% extends "base.html" %}
+{% extends "blog.html" %}
 
 
-
-{% block header %}
-<h2>
 {% block title %}
 PYPY sandbox for safe execution of arbitrary python code
 {% endblock title %}
-<span>
-by <a href="/">ReadEvalPrint</a>
-</span>
-</h2>
-{% endblock header %}
 
 
 {% block content %}
 <acticle class="md">
+UPDATE April 19: Read [Part 2](http://readevalprint.github.com/blog/python-sandbox-with-pypy-part2.html) for sane output in a normal python wrapper
+
 So I wanted to run some untrusted code. Javascript looked good because it could
 run in the browser (a natural sandbox). But I needed it to run server side too. 
-
-Pypy popped up on a few sites but it was a bit unclear on the use case for it at
+PyPy popped up on a few sites but it was a bit unclear on the use case for it at
 first. But [this helped](http://pypy.org/features.html#sandboxing). Plus, I like
 python :)
 
@@ -28,13 +21,11 @@ So here is how to install it on ubuntu. A lot of help came from [this dude](http
 I was on his site and [here](http://pypy.org/download.html#translate) every day for a
 week.
 
-[UPDATE April 19: Read [Part 2](http://readevalprint.github.com/blog/python-sandbox-with-pypy-part2.html)
-for sane output in a normal python wrapper]
-<pre class="bash"><code>&#36; sudo apt-get install \                                                                                                                                            
-gcc make python-dev libffi-dev pkg-config \
-libz-dev libbz2-dev libncurses-dev libexpat1-dev \
-libssl-dev libgc-dev python-sphinx python-greenlet
-</code></pre>
+
+    $ sudo apt-get install \                                                                                                                                            
+    gcc make python-dev libffi-dev pkg-config \
+    libz-dev libbz2-dev libncurses-dev libexpat1-dev \
+    libssl-dev libgc-dev python-sphinx python-greenlet
 
 
 ### Get the source and start the translation process
@@ -47,7 +38,7 @@ Python) to the target platform which is by default C.
 
 **Why do we need to do that?**
 
-This goes back to [what Pypy is](http://codespeak.net/pypy/dist/pypy/doc/getting-started.html#what-is-pypy).
+This goes back to [what PyPy is](http://codespeak.net/pypy/dist/pypy/doc/getting-started.html#what-is-pypy).
 To quote: PyPy is an implementation of the Python programming language written
 in Python itself. So combine python written in rpython and a compiler for rpython we
 get the ability to compile python code to native C speeds. :)
@@ -65,11 +56,10 @@ the program. It's like Inception.*
 be like Inception.&lt;/tangent&gt;
 
 
-<pre class="bash"><code>&#36; wget http://pypy.org/download/pypy-1.4.1-src.tar.bz2
-&#36; tar -jxvf  ./pypy-1.4.1-src.tar.bz2
-&#36; cd ./pypy-1.4.1-src/pypy/translator/goal
-&#36; python translate.py --sandbox
-</code></pre>
+    $ wget http://pypy.org/download/pypy-1.4.1-src.tar.bz2
+    $ tar -jxvf  ./pypy-1.4.1-src.tar.bz2
+    $ cd ./pypy-1.4.1-src/pypy/translator/goal
+    $ python translate.py --sandbox
 
 Grab a bite to eat or a cup of tea and enjoy the mandelbrot fractals.
 
@@ -86,32 +76,29 @@ you wait.
 
 Now while you are still in ~/pypy-1.4.1-src/pypy/translator/goal
 
-<pre><code>&#36; sudo ln -s &grave;pwd&grave;../sandbox/pypy_interact.py /usr/local/bin/pypy_interact.py </code></pre> 
+    $ sudo ln -s `pwd`../sandbox/pypy_interact.py /usr/local/bin/pypy_interact.py 
 
 Go home!
 
-<pre><code>&#36; cd 
-</code></pre>
+    $ cd
 
 Make a symlink of the source to /opt
 
-<pre><code>&#36; sudo ln -s &grave;pwd&grave;/pypy-1.4.1-src/ /opt/pypy-sandbox </code></pre>
+    $ sudo ln -s `pwd`/pypy-1.4.1-src/ /opt/pypy-sandbox
 
 Now let's test it...
 
-Should see prompt and don't go further if you don't
+Should see the prompt ">>>>" and don't go further if you don't
 
-<pre><code>&#36; pypy_interact.py /opt/pypy-sandbox/pypy/translator/goal/pypy-c
-</code></pre>
+    $ pypy_interact.py /opt/pypy-sandbox/pypy/translator/goal/pypy-c
 
 Now let's test the sandbox! Make a dummy file and put it in the virutal tmp folder
 
-This ./virtualtmp **and it's contents** will become /tmp to the sandboxed
+This ./virtualtmp *and it's contents* will become /tmp to the sandboxed
 interperter.
 
-<pre><code>&#36; mkdir ~/virtualtmp
-&#36; echo Good day Sire! &gt; ~/virtualtmp/greetings.txt
-</code></pre>
+    $ mkdir ~/virtualtmp
+    $ echo Good day Sire! > ~/virtualtmp/greetings.txt
 
 Specify the ~/virtualtmp for /tmp in the sandbox
 
@@ -119,30 +106,29 @@ Note: the --tmp option is always relative to the prompt regardless of absolute
 paths put there. So "/some/path/" is not from root and "~/a/path" is not from
 home. It's all relative to the prompt.
 
-<pre><code>&#36; pypy_interact.py --tmp=virtualtmp /opt/pypy-sandbox/pypy/translator/goal/pypy-c </code></pre>
+    $ pypy_interact.py --tmp=virtualtmp \
+    /opt/pypy-sandbox/pypy/translator/goal/pypy-c
 
 Note: you'll see logging text as well, output will be in there somewhere ;)
 
-<pre><code>&gt;&gt;&gt;&gt; f = open('/tmp/greetings.txt')
-&gt;&gt;&gt;&gt; f.read()
-'Good day Sire!\\n'
-</code></pre>
+    >>>> f = open('/tmp/greetings.txt')
+    >>>> f.read()
+    'Good day Sire!\\n'
 
 Let's try opening it to write
 But NO! you cannot!
 
-<pre><code>&gt;&gt;&gt;&gt; f = open('/tmp/greetings.txt', 'r+')
-Traceback (most recent call last):
-  File "<console>", line 1, in <module>
-IOError: [Errno 1] Operation not permitted: '/tmp/greetings.txt'
-</code></pre>
+    >>>> f = open('/tmp/greetings.txt', 'r+')
+    Traceback (most recent call last):
+      File "<console>", line 1, in <module>
+    IOError: [Errno 1] Operation not permitted: '/tmp/greetings.txt'
 
 [crtl+c to exit]
 They suggest installing ledit to have a saner prompt
 
-<pre class="bash"><code>&#36; sudo apt-get install ledit
-&#36; ledit python -u /usr/local/bin/pypy_interact.py --tmp=virtualtmp /opt/pypy-sandbox/pypy/translator/goal/pypy-cp
-</code></pre>
+    $ sudo apt-get install ledit
+    $ ledit python -u /usr/local/bin/pypy_interact.py \
+    --tmp=virtualtmp /opt/pypy-sandbox/pypy/translator/goal/pypy-cp
 
 Continue to [Part 2](/blog/python-sandbox-with-pypy-part2.html) for a wrapper in normal python that gives helpful output
 and error managment.

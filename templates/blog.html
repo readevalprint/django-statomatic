@@ -1,4 +1,14 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block head %}
-{% endblock head %}
+
+
+{% block header %}
+<h2>
+{% block title %}
+{% endblock title %}
+<span style="font-size:.5em">
+by <a href="/">ReadEvalPrint</a>
+</span>
+</h2>
+{% endblock header %}
+
