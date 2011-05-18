@@ -5,7 +5,7 @@ Run this with $ python ./statomatic.py runserver and go to http://localhost:8000
 Deploy with $ python ./statomatic.py render and rsync your files to a public_html folder.
 '''
 
-import os, sys, itertools
+import os, sys, itertools, argparse
 from  django.conf.urls.defaults import patterns
 from django.template.response import SimpleTemplateResponse
 from django.template import TemplateDoesNotExist
@@ -15,7 +15,7 @@ from markdown2 import markdown
 from datetime import datetime
 
 # helper function to locate this dir
-here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
+here = lambda x: os.path.join(os.path.abspath(os.curdir), x)
 me = os.path.splitext(os.path.split(__file__)[1])[0]
 
 # SETTINGS
@@ -54,27 +54,27 @@ def markdownify(rendered_template):
     return html.renderContents()
 
 
-def content_list(folder):
+def content_list(directory):
     '''
-    gives a list of urls and title in a folder reletive to the project root
+    gives a list of urls and title in an absolute dir or reletive to the content dir
     '''
-    for root, dirs, files in os.walk(here(folder)):
-        for f in files:
+    real_directory = os.path.join(CONTENT_DIR, directory)
+    for f in os.listdir(real_directory):
             # ignore hidden files
-            if f[0] != '.':
-                post_path = os.path.join(CONTENT_DIR, folder, f)
+            f = os.path.join(real_directory, f)
+            if os.path.isfile(f) and f[0] != '.':
+                post_path = os.path.join(real_directory, f)
                 post = SimpleTemplateResponse(post_path).render()
                 html = BeautifulSoup(post.rendered_content)
                 title = html.find('title')
-                published = html.find('time') or ''
+                published = html.find('time') or None
                 if published:
-                    published = published['datetime']
-                    print 'published', published
+                    published = datetime.strptime(published['datetime'], '%Y-%m-%d')
                 url = post_path.replace(CONTENT_DIR, '')
                 yield {
                     'title': title.contents[0].strip(),
                     'url': url,
-                    'published': datetime.strptime(published, '%Y-%m-%d')}
+                    'published': published}
 
 
 # VIEW
@@ -85,15 +85,8 @@ def index(request, template):
     return r
 
 
-# TODO: process all blog templates to pull title from them and populate the context.
-def blog(request, template):
-    template = 'blog/' + template.rstrip('/')
-    return smart_render(template, context={'name': 'bill'})
-
 # URLS
 urlpatterns = patterns('',
-    # do something different with blog stuff
-    #(r'^blog/(?P<template>[a-zA-Z0-9\-\.\/]*)$', blog),
     (r'^(?P<template>[a-zA-Z0-9\-\.\/]*)$', index))
 
 
@@ -120,22 +113,28 @@ def render():
                 f.close()
 
 
-def run():
-    sys.path += (here('.'),)
-    # set the ENV
-    os.environ['DJANGO_SETTINGS_MODULE'] = me
-
-
 if __name__ == '__main__':
+    # parse args
+    parser = argparse.ArgumentParser(description='Django-statomatic for the win.')
+    parser.add_argument('--base',
+                        help='''base of the site containing a ./content and
+                        ./templates folder and deploying to this folder directly''',
+                        default='0.0.0.0:8000')
+    parser.add_argument('--address',
+                        help='ip address and port to run on (default: 0.0.0.0:8000)',
+                        default='0.0.0.0:8000')
+    parser.add_argument('command', type=str,
+                        choices=['runserver', 'render'],
+                        help='Run the devserver or render content to the deploy folder, respectivly')
+
+    args = parser.parse_args()
     from django.core import management
-    run()
-    try:
-        if sys.argv[1] == 'render':
-                render()
-        elif sys.argv[1] == 'runserver':
-                management.call_command('runserver', '0.0.0.0:8000')
-        else:
-            print "please use with 'render' or 'runserver'"
-    except:
-        print "please use with 'render' or 'runserver'"
-        raise
+    # set the ENV
+    sys.path += (here('.'),)
+    os.environ['DJANGO_SETTINGS_MODULE'] = me
+    if args.command == 'render':
+        render()
+    elif args.command == 'runserver':
+        management.call_command('runserver', args.address)
+
+
