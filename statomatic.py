@@ -1,7 +1,8 @@
+#! /usr/bin/env python
+
 '''
 Run this with $ python ./statomatic.py runserver and go to http://localhost:8000/
-Deploy with $ python ./statomatic.py render and rsync your files to a 
-public_html folder.
+Deploy with $ python ./statomatic.py render and rsync your files to a public_html folder.
 '''
 
 import os, sys, itertools
@@ -11,7 +12,7 @@ from django.template import TemplateDoesNotExist
 from django.http import Http404
 from BeautifulSoup import BeautifulSoup
 from markdown2 import markdown
-
+from datetime import datetime
 
 # helper function to locate this dir
 here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
@@ -23,7 +24,7 @@ ROOT_URLCONF = me
 DATABASES = { 'default': {} } #required regardless of actual usage
 CONTENT_DIR = here('content')
 TEMPLATE_DIRS = (CONTENT_DIR, here('templates'),)
-DEPLOY_DIR = here('deploy')
+DEPLOY_DIR = here('')
 INSTALLED_APPS = ('django.contrib.markup',)
 
 def smart_render(template, context={}):
@@ -50,9 +51,31 @@ def markdownify(rendered_template):
         md.contents = BeautifulSoup(markdown(md.renderContents()))
     return html.renderContents() 
 
+def content_list(folder):
+    '''
+    gives a list of urls and title in a folder reletive to the project root
+    '''
+    for root, dirs, files in os.walk(here(folder)):
+        for f in files:
+            # ignore hidden files 
+            if f[0] != '.':
+                post_path = os.path.join(CONTENT_DIR,folder,f)
+                post = SimpleTemplateResponse(post_path).render()
+                html = BeautifulSoup(post.rendered_content)
+                title = html.find('title')
+                published = html.find('time') or ''
+                if published:
+                    published = published['datetime']
+                    print 'published', published
+                url = post_path.replace(CONTENT_DIR,'')
+                yield {
+                    'title': title.contents[0].strip()
+                    ,'url': url
+                    ,'published': datetime.strptime(published,'%Y-%m-%d' )}
 # VIEW
 def index(request, template):
-    r = smart_render(template)
+    blog_posts = list(content_list('blog'))
+    r = smart_render(template, context={'blog_posts':blog_posts})
     r.content  = markdownify(r.rendered_content)
     return r
 
@@ -107,3 +130,4 @@ if __name__ == '__main__':
             print "please use with 'render' or 'runserver'"
     except:
         print "please use with 'render' or 'runserver'"
+        raise
