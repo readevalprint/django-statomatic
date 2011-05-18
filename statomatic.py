@@ -19,13 +19,14 @@ here = lambda x: os.path.join(os.path.abspath(os.path.dirname(__file__)), x)
 me = os.path.splitext(os.path.split(__file__)[1])[0]
 
 # SETTINGS
-DEBUG=TEMPLATE_DEBUG=True
+DEBUG = TEMPLATE_DEBUG = True
 ROOT_URLCONF = me
-DATABASES = { 'default': {} } #required regardless of actual usage
+DATABASES = {'default': {}}  # required regardless of actual usage
 CONTENT_DIR = here('content')
 TEMPLATE_DIRS = (CONTENT_DIR, here('templates'),)
 DEPLOY_DIR = here('')
 INSTALLED_APPS = ('django.contrib.markup',)
+
 
 def smart_render(template, context={}):
     '''
@@ -34,12 +35,13 @@ def smart_render(template, context={}):
     naming them index
     '''
     template = template.rstrip('/')
-    for suffix in ['','/index.html','index.html']:
+    for suffix in ['', '/index.html', 'index.html']:
         try:
-            return SimpleTemplateResponse(template+suffix, context).render()
+            return SimpleTemplateResponse(template + suffix, context).render()
         except TemplateDoesNotExist:
             pass
     raise Http404
+
 
 def markdownify(rendered_template):
     '''
@@ -47,9 +49,10 @@ def markdownify(rendered_template):
     contents of the tag withthe marked up results.
     '''
     html = BeautifulSoup(rendered_template)
-    for md in html.findAll('','md'):
+    for md in html.findAll('', 'md'):
         md.contents = BeautifulSoup(markdown(md.renderContents()))
-    return html.renderContents() 
+    return html.renderContents()
+
 
 def content_list(folder):
     '''
@@ -57,9 +60,9 @@ def content_list(folder):
     '''
     for root, dirs, files in os.walk(here(folder)):
         for f in files:
-            # ignore hidden files 
+            # ignore hidden files
             if f[0] != '.':
-                post_path = os.path.join(CONTENT_DIR,folder,f)
+                post_path = os.path.join(CONTENT_DIR, folder, f)
                 post = SimpleTemplateResponse(post_path).render()
                 html = BeautifulSoup(post.rendered_content)
                 title = html.find('title')
@@ -67,31 +70,34 @@ def content_list(folder):
                 if published:
                     published = published['datetime']
                     print 'published', published
-                url = post_path.replace(CONTENT_DIR,'')
+                url = post_path.replace(CONTENT_DIR, '')
                 yield {
-                    'title': title.contents[0].strip()
-                    ,'url': url
-                    ,'published': datetime.strptime(published,'%Y-%m-%d' )}
+                    'title': title.contents[0].strip(),
+                    'url': url,
+                    'published': datetime.strptime(published, '%Y-%m-%d')}
+
+
 # VIEW
 def index(request, template):
     blog_posts = list(content_list('blog'))
-    r = smart_render(template, context={'blog_posts':blog_posts})
-    r.content  = markdownify(r.rendered_content)
+    r = smart_render(template, context={'blog_posts': blog_posts})
+    r.content = markdownify(r.rendered_content)
     return r
 
+
 # TODO: process all blog templates to pull title from them and populate the context.
-def blog(request,template):
-    template = 'blog/'+template.rstrip('/')
-    return smart_render(template, context={'name':'bill'})
+def blog(request, template):
+    template = 'blog/' + template.rstrip('/')
+    return smart_render(template, context={'name': 'bill'})
 
 # URLS
 urlpatterns = patterns('',
     # do something different with blog stuff
-    #(r'^blog/(?P<template>[a-zA-Z0-9\-\.\/]*)$', blog), 
+    #(r'^blog/(?P<template>[a-zA-Z0-9\-\.\/]*)$', blog),
     (r'^(?P<template>[a-zA-Z0-9\-\.\/]*)$', index))
 
 
-# RENDER 
+# RENDER
 def render():
     '''
     Takes everything in the CONTENT folder and renders and writes it to the
@@ -101,11 +107,11 @@ def render():
     client = Client()
     for root, dirs, files in os.walk(CONTENT_DIR):
         for f in files:
-            # ignore hidden files 
+            # ignore hidden files
             if f[0] != '.':
-                url = root.replace(CONTENT_DIR,'')+'/'+f
+                url = root.replace(CONTENT_DIR, '') + '/' + f
                 response = client.get(url)
-                out = os.path.join(DEPLOY_DIR,url[1:])
+                out = os.path.join(DEPLOY_DIR, url[1:])
                 d = os.path.dirname(out)
                 if not os.path.exists(d):
                     os.makedirs(d)
@@ -113,11 +119,13 @@ def render():
                 f.write(response.content)
                 f.close()
 
+
 def run():
     sys.path += (here('.'),)
     # set the ENV
     os.environ['DJANGO_SETTINGS_MODULE'] = me
- 
+
+
 if __name__ == '__main__':
     from django.core import management
     run()
@@ -125,7 +133,7 @@ if __name__ == '__main__':
         if sys.argv[1] == 'render':
                 render()
         elif sys.argv[1] == 'runserver':
-                management.call_command('runserver','0.0.0.0:8000' )
+                management.call_command('runserver', '0.0.0.0:8000')
         else:
             print "please use with 'render' or 'runserver'"
     except:
