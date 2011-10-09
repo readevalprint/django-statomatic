@@ -28,6 +28,7 @@ CONTENT_DIR = here('content')
 TEMPLATE_DIRS = (CONTENT_DIR, here('templates'),)
 DEPLOY_DIR = here('')
 INSTALLED_APPS = ('django.contrib.markup',)
+ALLOWED_INCLUDE_ROOTS = (os.path.expanduser('~'),)
 
 
 def smart_render(template, context={}):
