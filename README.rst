@@ -13,4 +13,4 @@ Features
 =======
 
 * Built in dev server for live previewing
-* .. and much more
+* ...and much more
