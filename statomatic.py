@@ -14,6 +14,8 @@ from BeautifulSoup import BeautifulSoup
 from markdown2 import markdown
 from datetime import datetime
 
+BeautifulSoup.QUOTE_TAGS['code'] = None
+
 # helper function to locate this dir
 here = lambda x: os.path.join(os.path.abspath(os.curdir), x)
 me = os.path.splitext(os.path.split(__file__)[1])[0]
@@ -62,7 +64,7 @@ def content_list(directory):
     for f in os.listdir(real_directory):
             # ignore hidden files
             f = os.path.join(real_directory, f)
-            if os.path.isfile(f) and f[0] != '.':
+            if os.path.isfile(f) and f[-4:] == 'html':
                 post_path = os.path.join(real_directory, f)
                 post = SimpleTemplateResponse(post_path).render()
                 html = BeautifulSoup(post.rendered_content)
@@ -80,7 +82,10 @@ def content_list(directory):
 # VIEW
 def index(request, template):
     blog_posts = list(content_list('blog'))
-    r = smart_render(template, context={'blog_posts': blog_posts})
+    r = smart_render(template, context={
+            'blog_posts': blog_posts,
+            'request': request,
+        })
     r.content = markdownify(r.rendered_content)
     return r
 
