@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='django-statomatic',
-    version='0.8.1',
+    version='0.8.12',
     author='Timothy Watts',
     author_email='tim@readevalprint.com',
     scripts=['statomatic.py'],
