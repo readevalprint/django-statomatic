@@ -63,21 +63,21 @@ def content_list(directory):
     '''
     real_directory = os.path.join(CONTENT_DIR, directory)
     for f in os.listdir(real_directory):
-            # ignore hidden files
-            f = os.path.join(real_directory, f)
-            if os.path.isfile(f) and f[-4:] == 'html':
-                post_path = os.path.join(real_directory, f)
-                post = SimpleTemplateResponse(post_path).render()
-                html = BeautifulSoup(post.rendered_content)
-                title = html.find('title')
-                published = html.find('time') or None
-                if published:
-                    published = datetime.strptime(published['datetime'], '%Y-%m-%d')
-                url = post_path.replace(CONTENT_DIR, '')
-                yield {
-                    'title': title.contents[0].strip(),
-                    'url': url,
-                    'published': published}
+        # ignore hidden files
+        f = os.path.join(real_directory, f)
+        if os.path.isfile(f) and f[-4:] == 'html':
+            post_path = os.path.join(real_directory, f)
+            post = SimpleTemplateResponse(post_path).render()
+            html = BeautifulSoup(post.rendered_content)
+            title = html.find('title')
+            published = html.find('time') or None
+            if published:
+                published = datetime.strptime(published['datetime'], '%Y-%m-%d')
+            url = post_path.replace(CONTENT_DIR, '')
+            yield {
+                'title': title.contents[0].strip(),
+                'url': url,
+                'published': published}
 
 
 # VIEW
@@ -119,7 +119,7 @@ def render():
                 f.close()
 
 
-if __name__ == '__main__':
+def main():
     # parse args
     parser = argparse.ArgumentParser(description='Django-statomatic for the win.')
     parser.add_argument('--base',
@@ -143,4 +143,6 @@ if __name__ == '__main__':
     elif args.command == 'runserver':
         management.call_command('runserver', args.address)
 
+if __name__ == '__main__':
+    main()
 

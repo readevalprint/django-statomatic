@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='django-statomatic',
-    version='0.8.0',
+    version='0.8.1',
     author='Timothy Watts',
     author_email='tim@readevalprint.com',
     scripts=['statomatic.py'],
@@ -21,5 +21,10 @@ setup(
         'Framework :: Django',
         'License :: OSI Approved :: MIT License',
     ],
+    entry_points={
+        'console_scripts': [
+            'statomatic = statomatic:main',
+        ],
+    },
 )
 
